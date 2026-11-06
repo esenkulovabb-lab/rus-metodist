@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>РУС-МЕТОДИСТ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5fc;color:#172443;font-family:Arial,sans-serif}
+header{background:linear-gradient(120deg,#18336f,#416ce1);color:white;text-align:center;padding:35px 15px}
+header h1{font-size:30px;margin:0 0 12px}
+.container{max-width:950px;margin:25px auto;padding:0 15px}
+.card{background:white;padding:23px;border-radius:15px;margin-bottom:20px;box-shadow:0 4px 18px #15264a12}
+h2{color:#315bd5;font-size:20px}
+label{display:block;font-weight:bold;margin:14px 0 7px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #d5ddeb;border-radius:8px;font-size:15px}
+textarea{min-height:110px}
+button{background:#315bd5;color:white;border:0;border-radius:8px;padding:12px 18px;margin:7px 5px 5px 0;cursor:pointer;font-weight:bold}
+.secondary{background:#e9efff;color:#2349a8}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.upload{background:#f7f9ff;border:2px dashed #9aafe2;padding:20px;border-radius:10px}
+#result{white-space:pre-wrap;line-height:1.65;background:#fbfcff;padding:18px;border:1px solid #dfe5f1;border-radius:10px;min-height:200px}
+footer{text-align:center;color:#68758d;padding:25px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>📚 РУС-МЕТОДИСТ</h1>
+<p>Цифровой ассистент преподавателя русского языка</p>
+<p>Кыргызский национальный университет</p>
+<p>Есенкулова Айнаш Нурбаевна</p>
+</header>
+
+<main class="container">
+
+<section class="card">
+<h2>1. Загрузка учебной презентации</h2>
+<div class="upload">
+<p>Выберите PDF-презентацию:</p>
+<input type="file" id="pdf" accept=".pdf,application/pdf">
+<p id="status">Файл не загружен</p>
+</div>
+<label>Текст презентации</label>
+<textarea id="pdftext" placeholder="Извлечённый текст появится здесь"></textarea>
+</section>
+
+<section class="card">
+<h2>2. Создание учебного материала</h2>
+<label>Тема занятия</label>
+<input id="topic" value="Морфологические нормы. Имя существительное">
+
+<div class="grid">
+<div>
+<label>Вид материала</label>
+<select id="type">
+<option value="plan">План занятия</option>
+<option value="test">Тестовые задания</option>
+<option value="practice">Практические упражнения</option>
+<option value="editing">Редактирование текста</option>
+<option value="theory">Теоретический материал</option>
+<option value="reflection">Вопросы для рефлексии</option>
+</select>
+</div>
+<div>
+<label>Уровень сложности</label>
+<select id="level">
+<option>Базовый</option>
+<option selected>Средний</option>
+<option>Продвинутый</option>
+</select>
+</div>
+</div>
+
+<label>Дополнительные пожелания</label>
+<textarea id="extra" placeholder="Введите дополнительные требования"></textarea>
+<button onclick="generate()">✨ Создать материал</button>
+<button class="secondary" onclick="createPrompt()">Создать промт для ChatGPT</button>
+</section>
+
+<section class="card">
+<h2>3. Результат</h2>
+<div id="result">Здесь появится созданный материал.</div>
+<button onclick="copyText()">📋 Копировать</button>
+<button onclick="downloadText()">⬇ Скачать</button>
+<button class="secondary" onclick="clearText()">Очистить</button>
+</section>
+
+<section class="card">
+<h2>4. Методические рекомендации</h2>
+<ul>
+<li>Учитывать уровень языковой подготовки студентов.</li>
+<li>Использовать нормы современного русского литературного языка.</li>
+<li>Включать практические и исследовательские задания.</li>
+<li>Проверять правильность ответов.</li>
+<li>Чередовать цифровые и традиционные формы обучения.</li>
+</ul>
+</section>
+</main>
+
+<footer>
+РУС-МЕТОДИСТ © 2026<br>
+Есенкулова Айнаш Нурбаевна
+</footer>
+
+<script>
+if(window.pdfjsLib){
+pdfjsLib.GlobalWorkerOptions.workerSrc=
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+
+document.getElementById("pdf").addEventListener("change",async function(e){
+const file=e.target.files[0];
+if(!file)return;
+document.getElementById("status").textContent="Обработка PDF...";
+try{
+if(!window.pdfjsLib)throw Error("PDF.js не загружена. Проверьте интернет.");
+const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+let all="";
+for(let i=1;i<=pdf.numPages;i++){
+const page=await pdf.getPage(i);
+const data=await page.getTextContent();
+all+="Страница "+i+":\n"+data.items.map(x=>x.str).join(" ")+"\n\n";
+}
+document.getElementById("pdftext").value=all;
+document.getElementById("status").textContent="Загружено страниц: "+pdf.numPages;
+}catch(err){
+document.getElementById("status").textContent="Ошибка: "+err.message;
+}
+});
+
+function generate(){
+const topic=document.getElementById("topic").value;
+const type=document.getElementById("type").value;
+const level=document.getElementById("level").value;
+const extra=document.getElementById("extra").value;
+const source=document.getElementById("pdftext").value;
+let r="РУС-МЕТОДИСТ\nТема: "+topic+"\nУровень: "+level+"\n\n";
+
+if(type==="plan"){
+r+="ПЛАН ЗАНЯТИЯ\n\n";
+r+="1. Организационный этап — 2 минуты.\n";
+r+="2. Актуализация знаний — 3 минуты.\n";
+r+="3. Объяснение материала — 5 минут.\n";
+r+="4. Практическая работа — 7 минут.\n";
+r+="5. Рефлексия и подведение итогов — 3 минуты.\n";
+r+="Цель: формирование грамматической компетенции студентов.\n";
+}
+if(type==="test"){
+r+="ТЕСТОВЫЕ ЗАДАНИЯ\n\n";
+r+="1. Какого рода существительное «кофе»?\nА) Женского Б) Мужского В) Среднего\nОтвет: Б.\n\n";
+r+="2. Выберите правильную форму: несколько...\nА) исследования Б) исследовании В) исследованья\nОтвет: А.\n\n";
+r+="3. Множественное число слова «договор»:\nА) договора Б) договоры В) договори\nОтвет: Б (в нейтральном значении соглашений).\n\n";
+r+="4. Правильная форма: опытные...\nА) инженера Б) инженеры В) инженер\nОтвет: Б.\n\n";
+r+="5. Какого рода слово «интервью»?\nОтвет: Среднего.\n\n";
+r+="6. Множественное число слова «паспорт»?\nОтвет: Паспорта.\n\n";
+r+="7. Множественное число слова «профессор»?\nОтвет: Профессора.\n\n";
+r+="8. Исправьте: несколько исследования.\nОтвет: несколько исследований.\n\n";
+r+="9. Исправьте: новые договора.\nОтвет: новые договоры (в нейтральном значении).\n\n";
+r+="10. Как правильно: в лесу или о лесе?\nОтвет: Оба варианта нормативны в разных контекстах.\n";
+}
+if(type==="practice"){
+r+="ПРАКТИЧЕСКИЕ УПРАЖНЕНИЯ\n\n";
+r+="1. Определите род слов: рояль, модель, интервью, кафе, авеню, меню.\n\n";
+r+="2. Образуйте множественное число: договор, профессор, инженер, паспорт, директор.\n\n";
+r+="3. Составьте предложения с существительными в разных падежах.\n\n";
+r+="4. Объясните различие сочетаний «в лесу» и «о лесе».\n";
+}
+if(type==="editing"){
+r+="ТЕКСТ ДЛЯ РЕДАКТИРОВАНИЯ\n\n";
+r+="В университете состоялась конференция, в которой участвовали опытные инженера и известные профессора. Докладчик представил результаты нескольких исследования. После мероприятия студенты обсуждали новые договора.\n\n";
+r+="Задание: найдите и исправьте ошибки.\n\n";
+r+="ОТВЕТЫ ДЛЯ ПРЕПОДАВАТЕЛЯ:\n";
+r+="инженера → инженеры;\nнескольких исследования → нескольких исследований;\nновые договора → новые договоры (в нейтральном значении).\n";
+}
+if(type==="theory"){
+r+="ТЕОРЕТИЧЕСКИЙ МАТЕРИАЛ\n\n";
+r+="Имя существительное — самостоятельная часть речи, обозначающая предмет и отвечающая на вопросы кто? что?\n\n";
+r+="Род: мужской, женский, средний.\n";
+r+="Число: единственное и множественное.\n";
+r+="Падеж: именительный, родительный, дательный, винительный, творительный, предложный.\n";
+r+="Особое внимание уделяется несклоняемым существительным и вариантам образования множественного числа.\n";
+}
+if(type==="reflection"){
+r+="ВОПРОСЫ ДЛЯ РЕФЛЕКСИИ\n\n";
+r+="1. Какие морфологические нормы вы сегодня изучили?\n";
+r+="2. Какие формы существительных вызвали затруднения?\n";
+r+="3. Почему важно соблюдать грамматические нормы в академической речи?\n";
+r+="4. Как вы будете применять полученные знания?\n";
+}
+if(source)r+="\nМАТЕРИАЛ ПРЕЗЕНТАЦИИ:\n"+source.substring(0,4000);
+if(extra)r+="\nДополнительные пожелания:\n"+extra;
+r+="\n\nПримечание: преподаватель проверяет и адаптирует материал перед использованием.";
+document.getElementById("result").textContent=r;
+}
+
+function createPrompt(){
+const topic=document.getElementById("topic").value;
+const type=document.getElementById("type");
+const source=document.getElementById("pdftext").value;
+const prompt="Ты — опытный методист и преподаватель русского языка в университете. Создай "+type.options[type.selectedIndex].text+" для студентов первого курса по теме: "+topic+". Уровень: "+document.getElementById("level").value+". Дополнительные требования: "+document.getElementById("extra").value+". Используй нормы современного русского литературного языка, добавь ответы и пояснения.\nМатериал презентации:\n"+source;
+document.getElementById("result").textContent=prompt;
+}
+
+async function copyText(){
+try{
+await navigator.clipboard.writeText(document.getElementById("result").textContent);
+alert("Текст скопирован!");
+}catch(e){alert("Выделите текст и скопируйте вручную.");}
+}
+function downloadText(){
+const blob=new Blob([document.getElementById("result").textContent],{type:"text/plain;charset=utf-8"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;a.download="rus_metodist_material.txt";a.click();
+URL.revokeObjectURL(url);
+}
+function clearText(){
+document.getElementById("result").textContent="Здесь появится созданный материал.";
+}
+</script>
+</body>
+</html>
